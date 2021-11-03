@@ -107,8 +107,12 @@ func (h *Handler) createMeasures() {
 	serverLatencyMeasure, err := h.meter.SyncFloat64().Histogram(ServerLatency)
 	handleErr(err)
 
+	requestCount, err := h.meter.SyncInt64().Counter(RequestCount)
+	handleErr(err)
+
 	h.counters[RequestContentLength] = requestBytesCounter
 	h.counters[ResponseContentLength] = responseBytesCounter
+	h.counters[RequestCount] = requestCount
 	h.valueRecorders[ServerLatency] = serverLatencyMeasure
 }
 
@@ -197,9 +201,12 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	h.counters[RequestContentLength].Add(ctx, bw.read, attributes...)
 	h.counters[ResponseContentLength].Add(ctx, rww.written, attributes...)
 
+	// Count of request to record errors ratio
+	requestCountAttributes := append(attributes, semconv.HTTPStatusCodeKey.Int(rww.statusCode))
+	h.counters[RequestCount].Add(ctx, 1, requestCountAttributes...)
+
 	// Use floating point division here for higher precision (instead of Millisecond method).
 	elapsedTime := float64(time.Since(requestStartTime)) / float64(time.Millisecond)
-
 	h.valueRecorders[ServerLatency].Record(ctx, elapsedTime, attributes...)
 }
 
