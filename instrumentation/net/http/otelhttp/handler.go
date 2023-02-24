@@ -113,7 +113,7 @@ func (h *Handler) createMeasures() {
 	serverLatencyMeasure, err := h.meter.Float64Histogram(ServerLatency)
 	handleErr(err)
 
-	requestCount, err := h.meter.SyncInt64().Counter(RequestCount)
+	requestCount, err := h.meter.Int64Counter(RequestCount)
 	handleErr(err)
 
 	h.counters[RequestContentLength] = requestBytesCounter
