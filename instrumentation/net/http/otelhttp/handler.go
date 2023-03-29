@@ -220,6 +220,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Add metrics
 	attributes := append(labeler.Get(), httpconv.ServerRequest(h.server, r)...)
+	attributes = filter(attributes)
 	if rww.statusCode > 0 {
 		attributes = append(attributes, semconv.HTTPStatusCode(rww.statusCode))
 	}
@@ -268,4 +269,17 @@ func WithRouteTag(route string, h http.Handler) http.Handler {
 		span.SetAttributes(semconv.HTTPRoute(route))
 		h.ServeHTTP(w, r)
 	})
+}
+
+func filter(attrs []attribute.KeyValue) (ret []attribute.KeyValue) {
+	for _, attr := range attrs {
+		if attr.Key == semconv.NetSockPeerPortKey {
+			continue
+		}
+		if attr.Key == semconv.NetSockPeerAddrKey {
+			continue
+		}
+		ret = append(ret, attr)
+	}
+	return
 }
